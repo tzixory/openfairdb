@@ -108,6 +108,33 @@ impl Error for ParameterError {
 }
 
 #[derive(Debug)]
+pub enum AccessError {
+  Denied
+}
+
+impl fmt::Display for AccessError {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    match *self {
+      AccessError::Denied => write!(f, "Requested access is denied")
+    }
+  }
+}
+
+impl Error for AccessError {
+  fn description(&self) -> &str {
+    match *self {
+      AccessError::Denied => "Requested access is denied",
+    }
+  }
+
+  fn cause(&self) -> Option<&Error> {
+    match *self {
+      _ => None
+    }
+  }
+}
+
+#[derive(Debug)]
 pub enum AppError {
   Encode(json::EncoderError),
   Parse(json::ParserError),
@@ -115,6 +142,7 @@ pub enum AppError {
   Store(StoreError),
   Io(io::Error),
   Parameter(ParameterError),
+  Access(AccessError)
 }
 
 impl fmt::Display for AppError {
@@ -125,6 +153,7 @@ impl fmt::Display for AppError {
       AppError::Store(ref err)      => write!(f, "DB error: {}", err),
       AppError::Io(ref err)         => write!(f, "IO error: {}", err),
       AppError::Parameter(ref err)  => write!(f, "Parameter error: {}", err),
+      AppError::Access(ref err)     => write!(f, "Access error: {}", err),
     }
   }
 }
@@ -137,6 +166,7 @@ impl Error for AppError {
       AppError::Store(ref err)      => err.description(),
       AppError::Io(ref err)         => err.description(),
       AppError::Parameter(ref err)  => err.description(),
+      AppError::Access(ref err)     => err.description(),
     }
   }
 
@@ -147,6 +177,7 @@ impl Error for AppError {
       AppError::Store(ref err)      => Some(err),
       AppError::Io(ref err)         => Some(err),
       AppError::Parameter(ref err)  => Some(err),
+      AppError::Access(ref err)     => Some(err),
     }
   }
 }
@@ -188,6 +219,7 @@ impl<'a> From<&'a AppError> for StatusCode {
       &AppError::Parse(_)        => StatusCode::BadRequest,
       &AppError::Io(_)           => StatusCode::BadRequest,
       &AppError::Parameter(_)    => StatusCode::BadRequest,
+      &AppError::Access(_)       => StatusCode::Unauthorized,
       &AppError::Store(ref err)      => match err {
         &StoreError::NotFound        => StatusCode::NotFound,
         &StoreError::InvalidVersion  => StatusCode::BadRequest,

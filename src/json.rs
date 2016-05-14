@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Markus Kohlhase <mail@markus-kohlhase.de>
+// Copyright (c) 2015 - 2016 Markus Kohlhase <mail@markus-kohlhase.de>
 
 #[derive(RustcDecodable, RustcEncodable, Debug, Clone)]
 pub struct Entry {
@@ -31,4 +31,10 @@ pub struct Category {
 pub struct SearchResult {
   pub visible   : Vec<String>,
   pub invisible : Vec<String>
+}
+
+#[derive(RustcDecodable, RustcEncodable, Debug, Clone)]
+pub struct User {
+  pub name      : String,
+  pub password  : String
 }

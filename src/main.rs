@@ -19,6 +19,9 @@ extern crate r2d2_cypher;
 extern crate typemap;
 extern crate uuid;
 extern crate geojson;
+extern crate nickel_cookies as cookies;
+extern crate nickel_session as session;
+extern crate time;
 
 mod json;
 mod store;
@@ -36,19 +39,35 @@ use r2d2_cypher::CypherConnectionManager;
 use clap::{Arg,App};
 use json::{Entry, Category, SearchResult};
 use store::Store;
-use error::{AppError, ParameterError, StoreError};
+use error::{AppError, ParameterError, StoreError, AccessError};
 use rustc_serialize::json::encode;
 use filter::{FilterByCategoryIds, FilterByBoundingBox};
 use search::Search;
 use sort::SortByDistanceTo;
+use session::{Session, CookieSession};
+use cookies::SecretKey;
+use time::Duration;
 
 static VERSION                  : &'static str = "0.0.16";
 static POOL_SIZE                : u32 = 5;
 static MAX_INVISIBLE_RESULTS    : usize = 5;
+static SECRET_KEY               : &'static SecretKey = &SecretKey([0; 32]);
 
 #[derive(Debug, Clone)]
 struct Data {
   db: r2d2::Pool<CypherConnectionManager>
+}
+
+impl cookies::KeyProvider for Data {
+  fn key(&self) -> SecretKey { SECRET_KEY.clone() }
+}
+
+impl session::Store for Data {
+  type Session = Option<String>;
+
+  fn timeout() -> Duration {
+    Duration::seconds(5)
+  }
 }
 
 fn enable_cors<'mw>(_req: &mut Request<Data>, mut res: Response<'mw,Data>) -> MiddlewareResult<'mw,Data> {
@@ -316,6 +335,33 @@ fn main() {
           (err.into(), format!("Could not search entries: {}", err))
       }
 
+    }
+
+    post "/user/login" => |req, mut res| {
+      let data: &Data = res.server_data();
+      match req.json_as::<json::User>()
+        .map_err(AppError::Io)
+        .and_then(|u|
+          data.db.clone().get()
+          .map_err(StoreError::Pool)
+          .map_err(AppError::Store)
+          .and_then(|ref pool|
+            json::User::get(pool, u.name.clone())
+            .map_err(AppError::Store)
+            .and_then(|user|{
+              let n = user.name;
+              if u.name == n && u.password == user.password {
+                *CookieSession::get_mut(req, &mut res) = Some(n);
+                Ok(())
+              } else {
+                Err(AccessError::Denied).map_err(AppError::Access)
+              }
+          }
+        )))
+      {
+        Ok(_)        => (StatusCode::Ok, format!("Successfully logged in")),
+        Err(ref err) => (err.into(), format!("Could not login: {}", err))
+      }
     }
 
     get "/server/version" => { VERSION }

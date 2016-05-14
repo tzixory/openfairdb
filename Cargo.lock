@@ -9,10 +9,13 @@ dependencies = [
  "hyper 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "nickel 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nickel_cookies 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nickel_session 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "r2d2 0.6.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "r2d2_cypher 0.1.0 (git+git://github.com/flosse/r2d2-cypher.git)",
  "rustc-serialize 0.3.19 (registry+https://github.com/rust-lang/crates.io-index)",
  "rusted_cypher 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "time 0.1.35 (registry+https://github.com/rust-lang/crates.io-index)",
  "typemap 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "unicase 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "uuid 0.1.18 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -47,6 +50,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "bitflags"
 version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "byteorder"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -248,6 +256,35 @@ dependencies = [
  "time 0.1.35 (registry+https://github.com/rust-lang/crates.io-index)",
  "typemap 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 0.5.9 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "nickel_cookies"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "cookie 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hyper 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lazy_static 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nickel 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "plugin 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
+ "typemap 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "nickel_session"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "byteorder 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cookie 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nickel 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nickel_cookies 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "plugin 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustc-serialize 0.3.19 (registry+https://github.com/rust-lang/crates.io-index)",
+ "time 0.1.35 (registry+https://github.com/rust-lang/crates.io-index)",
+ "typemap 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

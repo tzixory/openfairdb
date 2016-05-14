@@ -1,6 +1,6 @@
-// Copyright (c) 2015 Markus Kohlhase <mail@markus-kohlhase.de>
+// Copyright (c) 2015 - 2016 Markus Kohlhase <mail@markus-kohlhase.de>
 
-use json::{Entry, Category};
+use json::{Entry, Category, User};
 use rusted_cypher::GraphClient;
 use uuid::Uuid;
 use error::StoreError;
@@ -348,4 +348,41 @@ fn update_category(c: &Category, graph: &GraphClient) -> Result<Category,StoreEr
     })));
   result.rows().next().ok_or(StoreError::Save)
   .and_then(|r|r.get::<Category>("c").map_err(StoreError::Graph))
+}
+
+impl Store for User {
+
+  type Id = String;
+  type Connection = GraphClient;
+  type Error = StoreError;
+
+  fn get(graph: &Self::Connection, id: Self::Id) -> Result<User, StoreError> {
+    let result = try!(graph.cypher().exec(
+        cypher_stmt!("MATCH (u:User) WHERE u.id = {id} RETURN u", {"id" => &id})));
+    result.rows().next().ok_or(StoreError::NotFound)
+    .and_then(|r| r.get::<User>("u").map_err(StoreError::Graph))
+  }
+
+  fn all(graph: &Self::Connection) -> Result<Vec<User>, StoreError> {
+    let result = try!(graph.cypher().exec("MATCH (u:User) RETURN u"));
+    Ok(result
+      .rows()
+      .filter_map(|r|r.get::<User>("u").ok())
+      .collect::<Vec<User>>())
+  }
+
+  fn save(&self, graph: &Self::Connection) -> Result<User, StoreError> {
+    let result = try!(graph.cypher().exec(cypher_stmt!(
+      "MERGE (u:User {
+        name     : {name},
+        password : {password}
+      })
+      RETURN u", {
+        "name"     => &self.name,
+        "password" => &self.password
+      })));
+    result.rows().next().ok_or(StoreError::Save)
+    .and_then(|r|r.get::<User>("u").map_err(StoreError::Graph))
+  }
+
 }
