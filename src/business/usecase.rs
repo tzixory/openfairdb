@@ -1,3 +1,6 @@
+use entities::*;
+use super::date_restriction::DateRestriction;
+
 ////////////////
 // USE CASE: user requests an entry
 //
@@ -11,21 +14,23 @@
 //
 // * return the entry and the list of tags
 
-////
+////////
 // sub case: no date restriction, return head entries
 
 //
-////
+////////
 
-////
+////////
 // sub case: date restriction given, return latest entries before date
 
 //
-////
+////////
 
 //
 // USE CASE: user requests an entry (head entry, no date restriction)
 ////////////////
+
+
 
 ////////////////
 // USE CASE: user researches a tag
@@ -40,21 +45,47 @@
 //
 // * return the newest state of each entry
 
-////
+pub fn research_a_keyword(keyword : String, up_to : DateRestriction) -> Vec<Entry> {
+    unimplemented!();
+
+    let tag_id = get_tag_id_by_keyword(keyword);
+    let ids = get_associated_entry_ids_of_tag(tag_id);
+    let entries = get_entries_by_ids(ids, up_to);
+
+    entries
+}
+
+pub fn get_tag_id_by_keyword(keyword : String) -> String {
+    unimplemented!();
+}
+
+pub fn get_associated_entry_ids_of_tag(tag_id : String) -> Vec<String> {
+    unimplemented!();
+}
+
+pub fn get_entries_by_ids(ids : Vec<String>, up_to : DateRestriction) -> Vec<Entry> {
+    unimplemented!();
+}
+
+
+
+////////
 // sub case: no date restriction, return head entries
 
 //
-////
+////////
 
-////
+////////
 // sub case: date restriction given, return latest entries before date
 
 //
-////
+////////
 
 //
 // USE CASE: user researches a tag
 ////////////////
+
+
 
 ////////////////
 // USE CASE: (future) onthological researches
@@ -65,29 +96,29 @@
 // * return all sub-class tags / all super-class tags / all equivalent tags /
 //   all direct similarities
 
-////
+////////
 // sub-case: sub-classes
 
 //
-////
+////////
 
-////
+////////
 // sub-case: super-classes
 
 //
-////
+////////
 
-////
+////////
 // sub-case: equivalences
 
 //
-////
+////////
 
-////
+////////
 // sub-case: similarities
 
 //
-////
+////////
 
 // USE CASE: (future) onthological researches
 ////////////////
