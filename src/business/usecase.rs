@@ -1,6 +1,22 @@
 use entities::*;
 use super::date_restriction::DateRestriction;
 
+struct MockRepository;
+
+impl MockRepository {
+    fn GetEntries() -> Vec<Entry> {
+        unimplemented!();
+    }
+
+    fn GetTags() -> Vec<Tag> {
+        unimplemented!();
+    }
+
+    fn GetTriples() -> Vec<SentenceTriple> {
+        unimplemented!();
+    }
+}
+
 ////////////////
 // USE CASE: user requests an entry
 //
@@ -45,25 +61,25 @@ use super::date_restriction::DateRestriction;
 //
 // * return the newest state of each entry
 
-pub fn research_a_keyword(keyword : String, up_to : DateRestriction) -> Vec<Entry> {
+pub fn search_by_tags(tags : &Vec<String>, up_to : DateRestriction) -> Vec<Entry> {
     unimplemented!();
 
-    let tag_id = get_tag_id_by_keyword(keyword);
-    let ids = get_associated_entry_ids_of_tag(tag_id);
-    let entries = get_entries_by_ids(ids, up_to);
+    let tag_ids = get_tag_ids_by_tags(tags);
+    let ids = get_associated_entry_ids_of_tags(&tag_ids);
+    let entries = get_entries_by_ids(&ids, up_to);
 
     entries
 }
 
-pub fn get_tag_id_by_keyword(keyword : String) -> String {
+pub fn get_tag_ids_by_tags(tags : &Vec<String>) -> Vec<String> {
     unimplemented!();
 }
 
-pub fn get_associated_entry_ids_of_tag(tag_id : String) -> Vec<String> {
+pub fn get_associated_entry_ids_of_tags(tag_ids : &Vec<String>) -> Vec<String> {
     unimplemented!();
 }
 
-pub fn get_entries_by_ids(ids : Vec<String>, up_to : DateRestriction) -> Vec<Entry> {
+pub fn get_entries_by_ids(ids : &Vec<String>, up_to : DateRestriction) -> Vec<Entry> {
     unimplemented!();
 }
 
@@ -122,3 +138,50 @@ pub fn get_entries_by_ids(ids : Vec<String>, up_to : DateRestriction) -> Vec<Ent
 
 // USE CASE: (future) onthological researches
 ////////////////
+
+
+////////////////
+// TESTS
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    // ENVIRONMENT: tags, entries, some links from tags to entries
+    // INPUT: empty vec of tags
+    // OUTPUT: empty vec of entities
+    fn empty_search_by_tags()
+    {
+        assert!(false);
+    }
+
+    #[test]
+    // ENVIRONMENT: tags, entries, some links from tags to entries
+    // INPUT: vec of one tag (existing)
+    // OUTPUT: vec of associated entries
+    // ASSERT: only the fitting entries are given back
+    fn search_by_one_tag()
+    {
+        assert!(false);
+    }
+
+    #[test]
+    // ENVIRONMENT: tags, entries, some links from tags to entries
+    // INPUT: vec of one tag (undefined)
+    // OUTPUT: vec of associated entries
+    // ASSERT: output should be empty
+    fn search_by_undefined_tag()
+    {
+        assert!(false);
+    }
+
+    #[test]
+    // ENVIRONMENT: tags, entries, some links from tags to entries
+    // INPUT: vec of tags, date restriction
+    // OUTPUT: vec of associated entries, but only up to the given date
+    fn search_by_tags_with_date_restriction()
+    {
+        assert!(false);
+    }
+}
