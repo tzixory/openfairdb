@@ -1,5 +1,3 @@
-// Copyright (c) 2015 - 2016 Markus Kohlhase <mail@markus-kohlhase.de>
-
 pub mod error;
 pub mod filter;
 pub mod duplicates;
@@ -8,3 +6,4 @@ pub mod geo;
 pub mod db;
 pub mod usecase;
 pub mod date_restriction;
+pub mod validate;

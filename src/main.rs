@@ -1,4 +1,4 @@
-// Copyright (c) 2015 - 2016 Markus Kohlhase <mail@markus-kohlhase.de>
+// Copyright (c) 2015 - 2017 Markus Kohlhase <mail@markus-kohlhase.de>
 
 #![feature(plugin,try_from,custom_derive)]
 #![plugin(rocket_codegen)]
@@ -24,6 +24,7 @@ extern crate lazy_static;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
+extern crate chrono;
 
 mod entities;
 mod business;
