@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, RustcDecodable)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct Entry {
     pub id          : String,
     pub created     : u64,
@@ -19,7 +19,7 @@ pub struct Entry {
     pub license     : Option<String>,
 }
 
-#[derive(Debug, Clone, RustcDecodable)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct Category {
     pub id        : String,
     pub created   : u64,
@@ -39,12 +39,13 @@ pub struct Tag {
 pub enum Predicate {
     IsEquivalentTo,
     IsSimilarTo,
-    IsSubtypeOf
+    IsSubtypeOf,
+    IsTaggedAs
 }
 
 #[derive(Debug, Clone)]
 pub struct SentenceTriple {
-    subject   : String,
-    predicate : Predicate,
-    object    : String
+    pub subject   : String,
+    pub predicate : Predicate,
+    pub object    : String
 }

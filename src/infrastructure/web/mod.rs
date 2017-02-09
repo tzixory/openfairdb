@@ -1,14 +1,11 @@
-use r2d2_cypher::CypherConnectionManager;
-use r2d2::{self, Pool};
 use rocket::{self, LoggingLevel};
 use rocket_contrib::JSON;
-use rocket::response::{Response, Responder};
+use rocket::response::{content, Response, Responder};
 use rocket::http::Status;
 use rocket::config::{Environment, Config};
 use adapters::json;
 use entities::*;
 use business::db::Repo;
-use adapters::error::Error as AdapterError;
 use business::error::{Error, RepoError};
 use infrastructure::error::AppError;
 use serde_json::ser::to_string;
@@ -16,45 +13,24 @@ use business::sort::SortByDistanceTo;
 use business::{usecase, filter, geo};
 use business::filter::InBBox;
 use business::duplicates::{self, DuplicateType};
-use std::convert::TryFrom;
-use rusted_cypher::GraphClient;
-use std::env;
-use std::io;
+use std::{env,result,io};
 
-static POOL_SIZE: u32 = 5;
 static MAX_INVISIBLE_RESULTS: usize = 5;
 static DB_URL_KEY: &'static str = "OFDB_DATABASE_URL";
 
-#[derive(Debug, Clone)]
-struct Data {
-    db: r2d2::Pool<CypherConnectionManager>,
-}
+#[cfg(not(test))]
+mod neo4j;
+#[cfg(test)]
+mod mockdb;
+#[cfg(test)]
+mod tests;
 
-lazy_static! {
-    pub static ref DB_POOL: r2d2::Pool<CypherConnectionManager> = {
-        let config = r2d2::Config::builder().pool_size(POOL_SIZE).build();
-        let db_url = env::var(DB_URL_KEY).expect(&format!("{} must be set.", DB_URL_KEY));
-        let manager = CypherConnectionManager { url: db_url.into() };
-        Pool::new(config, manager).expect("Failed to create pool.")
-    };
-}
+#[cfg(not(test))]
+fn db() -> io::Result<neo4j::DB> { neo4j::db() }
+#[cfg(test)]
+fn db() -> io::Result<mockdb::DB> { mockdb::db() }
 
-pub struct DB(r2d2::PooledConnection<CypherConnectionManager>);
-
-impl DB {
-    pub fn conn(&mut self) -> &mut GraphClient {
-        &mut *self.0
-    }
-}
-
-pub fn db() -> io::Result<DB> {
-    match DB_POOL.get() {
-        Ok(conn) => Ok(DB(conn)),
-        Err(e) => Err(io::Error::new(io::ErrorKind::Other, e)),
-    }
-}
-
-type JsonResult = Result<JSON<String>, AppError>;
+type Result<T> = result::Result<content::JSON<T>, AppError>;
 
 fn extract_ids(s: &str) -> Vec<String> {
     s.split(',')
@@ -71,8 +47,18 @@ fn extract_ids_test() {
     assert_eq!(extract_ids("abc,,d"), vec!["abc", "d"]);
 }
 
+#[get("/entries")]
+fn get_entries() -> Result<JSON<Vec<json::Entry>>> {
+    let entries: Vec<Entry> = db()?.conn().all()?;
+    let e = entries
+        .into_iter()
+        .map(json::Entry::from)
+        .collect::<Vec<json::Entry>>();
+    Ok(content::JSON(JSON(e)))
+}
+
 #[get("/entries/<id>")]
-fn get_entry(id: &str) -> JsonResult {
+fn get_entry(id: &str) -> Result<String> {
     let ids = extract_ids(id);
     let entries: Vec<Entry> = db()?.conn().all()?;
     let e = match ids.len() {
@@ -94,34 +80,39 @@ fn get_entry(id: &str) -> JsonResult {
                 .collect::<Vec<json::Entry>>())
         }
     }?;
-    Ok(JSON(e))
+    Ok(content::JSON(e))
 }
 
 #[get("/duplicates")]
-fn get_duplicates() -> Result<JSON<Vec<(String, String, DuplicateType)>>, AppError> {
+fn get_duplicates() -> Result<JSON<Vec<(String, String, DuplicateType)>>> {
     let entries: Vec<Entry> = db()?.conn().all()?;
     let ids = duplicates::find_duplicates(&entries);
-    Ok(JSON(ids))
+    Ok(content::JSON(JSON(ids)))
 }
 
 #[post("/entries", format = "application/json", data = "<e>")]
-fn post_entry(e: JSON<usecase::NewEntry>) -> Result<JSON<String>, AppError> {
-    let id = usecase::create_new_entry(db()?.conn(), e.unwrap())?;
-    Ok(JSON(id))
+fn post_entry(e: JSON<usecase::NewEntry>) -> Result<String> {
+    let id = usecase::create_new_entry(db()?.conn(), e.into_inner())?;
+    Ok(content::JSON(id))
 }
 
 #[put("/entries/<id>", format = "application/json", data = "<e>")]
-fn put_entry(id: &str, e: JSON<json::Entry>) -> Result<JSON<String>, AppError> {
-    let _: Entry = db()?.conn().get(id.to_string())?;
-    let mut e = e.unwrap();
-    e.id = Some(id.to_owned());
-    let e = Entry::try_from(e).map_err(AdapterError::Conversion)?;
-    db()?.conn().update(&e)?;
-    Ok(JSON(id.to_string()))
+fn put_entry(id: &str, e: JSON<usecase::UpdateEntry>) -> Result<String> {
+    usecase::update_entry(db()?.conn(), e.into_inner())?;
+    Ok(content::JSON(id.to_string()))
+}
+
+#[get("/categories")]
+fn get_categories() -> Result<JSON<Vec<json::Category>>> {
+    let categories: Vec<Category> = db()?.conn().all()?;
+    Ok(content::JSON(JSON(categories
+        .into_iter()
+        .map(json::Category::from)
+        .collect::<Vec<json::Category>>())))
 }
 
 #[get("/categories/<id>")]
-fn get_categories(id: &str) -> Result<JSON<String>, AppError> {
+fn get_category(id: &str) -> Result<String> {
     let ids = extract_ids(id);
     let categories: Vec<Category> = db()?.conn().all()?;
     let res = match ids.len() {
@@ -144,7 +135,7 @@ fn get_categories(id: &str) -> Result<JSON<String>, AppError> {
                 .collect::<Vec<json::Category>>())
         }
     }?;
-    Ok(JSON(res))
+    Ok(content::JSON(res))
 }
 
 #[derive(FromForm)]
@@ -155,7 +146,7 @@ struct SearchQuery {
 }
 
 #[get("/search?<search>")]
-fn get_search(search: SearchQuery) -> Result<JSON<json::SearchResult>, AppError> {
+fn get_search(search: SearchQuery) -> Result<JSON<json::SearchResult>> {
     let entries: Vec<Entry> = db()?.conn().all()?;
     let cat_ids = extract_ids(&search.categories);
     let bbox = geo::extract_bbox(&search.bbox).map_err(Error::Parameter)
@@ -184,16 +175,16 @@ fn get_search(search: SearchQuery) -> Result<JSON<json::SearchResult>, AppError>
         .map(|x| x.id.clone())
         .collect::<Vec<_>>();
 
-    Ok(JSON(json::SearchResult {
+    Ok(content::JSON(JSON(json::SearchResult {
         visible: visible_results,
         invisible: invisible_results,
-    }))
+    })))
 }
 
 #[get("/count/entries")]
-fn get_count_entries() -> JsonResult {
+fn get_count_entries() -> Result<String> {
     let entries: Vec<Entry> = db()?.conn().all()?;
-    Ok(JSON(entries.len().to_string()))
+    Ok(content::JSON(entries.len().to_string()))
 }
 
 #[get("/server/version")]
@@ -210,18 +201,21 @@ pub fn run(db_url: &str, port: u16, enable_cors: bool) {
         \nhttps://github.com/SergioBenitez/Rocket/pull/141\nis merged :(");
     }
 
-    let cfg = Config::default_for(Environment::Production, "/custom")
-        .unwrap()
+    let cfg = Config::build(Environment::Production)
         .log_level(LoggingLevel::Normal)
-        .address("127.0.0.1".into())
-        .port(port as usize);
+        .address("127.0.0.1")
+        .port(port)
+        .finalize()
+        .unwrap();
 
-    rocket::custom(&cfg)
+    rocket::custom(cfg,true)
         .mount("/",
-               routes![get_entry,
+               routes![get_entries,
+                       get_entry,
                        post_entry,
                        put_entry,
                        get_categories,
+                       get_category,
                        get_search,
                        get_duplicates,
                        get_count_entries,
@@ -230,7 +224,7 @@ pub fn run(db_url: &str, port: u16, enable_cors: bool) {
 }
 
 impl<'r> Responder<'r> for AppError {
-    fn respond(self) -> Result<Response<'r>, Status> {
+    fn respond(self) -> result::Result<Response<'r>, Status> {
         Err(match self {
             AppError::Business(ref err) => {
                 match *err {
@@ -243,7 +237,6 @@ impl<'r> Responder<'r> for AppError {
                     }
                 }
             }
-            AppError::Parse(_) |
             AppError::Adapter(_) => Status::BadRequest,
 
             _ => Status::InternalServerError,

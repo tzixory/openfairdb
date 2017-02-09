@@ -2,7 +2,7 @@ use entities as e;
 use std::convert::TryFrom;
 use adapters::error::ConversionError;
 
-#[derive(RustcDecodable, RustcEncodable, Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Entry {
     pub id          : Option<String>,
     pub created     : Option<u64>,
@@ -19,10 +19,11 @@ pub struct Entry {
     pub telephone   : Option<String>,
     pub homepage    : Option<String>,
     pub categories  : Option<Vec<String>>,
+    pub tags        : Option<Vec<String>>,
     pub license     : Option<String>,
 }
 
-#[derive(RustcDecodable, RustcEncodable, Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Category {
     pub id        : Option<String>,
     pub created   : Option<u64>,
@@ -30,7 +31,7 @@ pub struct Category {
     pub name      : Option<String>
 }
 
-#[derive(RustcDecodable, RustcEncodable, Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone)]
 pub struct SearchResult {
     pub visible   : Vec<String>,
     pub invisible : Vec<String>
@@ -56,6 +57,7 @@ impl From<e::Entry> for Entry {
             telephone   : e.telephone,
             homepage    : e.homepage,
             categories  : Some(e.categories),
+            tags        : Some(e.tags),
             license     : e.license
         }
     }
@@ -93,7 +95,7 @@ impl TryFrom<Entry> for e::Entry {
             telephone   : e.telephone,
             homepage    : e.homepage,
             categories  : e.categories.ok_or_else(||ConversionError::Categories)?,
-            tags        : vec![],
+            tags        : e.tags.unwrap_or_else(||vec![]),
             license     : e.license
         })
     }
